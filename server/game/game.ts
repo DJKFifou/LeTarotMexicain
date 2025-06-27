@@ -1,7 +1,7 @@
-import { Player } from '../player/player.js';
 import type { GameData, GameId } from '../contracts/game.js';
 import type { PlayerId } from '../contracts/player.js';
-import type { Turn } from '../turn/turn.js';
+import { Player } from '../player/player.js';
+import { Turn } from '../turn/turn.js';
 
 const uuid = crypto.randomUUID();
 
@@ -32,6 +32,14 @@ export class Game {
 
 	get playerList(): Player[] {
 		return this.players;
+	}
+
+	start(): void {
+		this.nextTurn();
+	}
+
+	nextTurn(): void {
+		this.turn = new Turn(this);
 	}
 
 	get data(): GameData {

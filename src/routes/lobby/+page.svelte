@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { socket } from '$lib/socket';
-	import { playerId, players, host as hostStore, gameId } from '$lib/stores/game';
+	import { playerId, players, host as hostStore, gameId, turn } from '$lib/stores/game';
 	import { goto } from '$app/navigation';
 	import type { Player } from '$lib/stores/game';
 
@@ -21,8 +21,10 @@
 		socket.emit('startGame', gameId);
 	}
 
-	socket.on('gameStarted', () => {
+	socket.on('gameStarted', (data) => {
 		console.log('Game started successfully');
+		console.log('data :', data);
+		turn.set(data.turn);
 		goto('/game');
 	});
 </script>

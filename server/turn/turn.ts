@@ -19,7 +19,36 @@ export class Turn implements EntityClass<TurnData> {
 		this.current = null;
 		this.remaining = game.data.players.map((player) => player.id);
 
-		// this.nextPlayer();
+		this.nextPlayer();
+	}
+
+	endTurn(): void {
+		this.nextPlayer();
+	}
+
+	protected nextPlayer(): void {
+		if (this.current) {
+			this.played.push(this.current.data.player.id);
+		}
+
+		const newCurrentPlayer = this.getNextPlayer();
+		if (!newCurrentPlayer) {
+			this.game.nextTurn();
+			return;
+		}
+
+		this.remaining = this.remaining.filter((id) => id !== newCurrentPlayer.data.id);
+
+		this.current = new PlayerTurn({
+			game: this.game,
+			player: newCurrentPlayer
+		});
+	}
+
+	protected getNextPlayer(): Player | null {
+		const nextPlayerId = this.remaining[0] ?? null;
+
+		return this.game.getPlayerById(nextPlayerId);
 	}
 
 	get playerListFromCurrent(): Array<Player> {

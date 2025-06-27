@@ -86,7 +86,17 @@ export function socketIOPlugin(): Plugin {
 						return;
 					}
 
+					game.start();
+
 					io.to(gameId).emit('gameStarted', game.data);
+				});
+
+				socket.on('turnEnd', (gameId) => {
+					const game = gameRepository.getGameById(socket.data.gameId);
+
+					game.turn.endTurn();
+
+					io.to(gameId).emit('gameData', game.data);
 				});
 			});
 		}
