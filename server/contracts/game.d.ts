@@ -6,4 +6,5 @@ export interface GameData {
 	id: GameId;
 	hostId: PlayerId | null;
 	players: Array<PlayerData>;
+	turn?: TurnData;
 }

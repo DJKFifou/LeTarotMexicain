@@ -45,7 +45,7 @@
 </div>
 
 {#if $playerId === $hostStore?.id}
-	<button onclick={startGame($gameId)} class="cursor-pointer underline">Start de game</button>
+	<button onclick={() => startGame($gameId)} class="cursor-pointer underline">Start de game</button>
 {/if}
 
 <p>{$playerId === $hostStore?.id ? 'Im god' : 'Im a piece of shit'}</p>
