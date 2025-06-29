@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { socket } from '$lib/socket';
-	import { playerId, players, host as hostStore, gameId, turn } from '$lib/stores/game';
+	import { player, players, host as hostStore, gameId, turn } from '$lib/stores/game';
 	import { goto } from '$app/navigation';
 	import type { Player } from '$lib/stores/game';
 
@@ -22,8 +22,8 @@
 	}
 
 	socket.on('gameStarted', (data) => {
-		console.log('Game started successfully');
 		console.log('data :', data);
+		players.set(data.players);
 		turn.set(data.turn);
 		goto('/game');
 	});
@@ -46,8 +46,6 @@
 	</ul>
 </div>
 
-{#if $playerId === $hostStore?.id}
+{#if $player.id === $hostStore?.id}
 	<button onclick={() => startGame($gameId)} class="cursor-pointer underline">Start de game</button>
 {/if}
-
-<p>{$playerId === $hostStore?.id ? 'Im god' : 'Im a piece of shit'}</p>

@@ -1,42 +1,56 @@
 <script lang="ts">
 	import { socket } from '$lib/socket';
-	import { playerId, players, host as hostStore, gameId, turn } from '$lib/stores/game';
-	$: yourTurn = $turn.current.player.id === $playerId;
-	function endTurn(gameId: string) {
-		console.log('Ending turn...');
-		socket.emit('turnEnd', gameId);
+	import {
+		player as playerStore,
+		players,
+		host as hostStore,
+		gameId,
+		turn
+	} from '$lib/stores/game';
+	$: yourTurn = $turn.current.player.id === $playerStore.id;
+	$: {
+		const currentPlayer = $players.find((p) => p.id === $playerStore.id);
+		if (currentPlayer) {
+			playerStore.set(currentPlayer);
+		}
+	}
+
+	console.log('players:', $players);
+	console.log('playerStore:', $playerStore);
+
+	function playCard(gameId: string, playerCard: number) {
+		console.log('Play card : ', playerCard);
+		socket.emit('playCard', {
+			gameId: gameId,
+			playerId: $playerStore.id,
+			card: playerCard
+		});
 	}
 
 	socket.on('gameData', (data) => {
 		console.log('📥 gameData received:', data);
+		players.set(data.players);
 		turn.set(data.turn);
-		console.log('✅ Nouveau joueur courant :', data.turn.current.player.id);
-		console.log('Joueur courant :', $turn.current.player.id);
-		console.log('playerId :', $playerId);
 	});
 </script>
 
 <p>Game :</p>
 
-<p>ID : {$gameId}</p>
+<p>{$playerStore.name}</p>
 
-<p>Hôte : {$hostStore?.name}</p>
+<p>{$playerStore.id === $hostStore?.id ? 'Im god' : 'Im a piece of shit'}</p>
 
-<div>
-	<p>Invités :</p>
-	<ul>
-		{#each $players as player}
-			{#if player.id !== $hostStore?.id}
-				<li>{player.name}</li>
-			{/if}
-		{/each}
-	</ul>
+<p>{$turn.current.player.id === $playerStore.id ? "That's my turn !" : 'Not my turn yet...'}</p>
+
+<div class="flex flex-wrap gap-2">
+	{#each $playerStore.cards as playerCard}
+		{#if yourTurn}
+			<button
+				onclick={() => playCard($gameId, playerCard)}
+				class="cursor-pointer rounded border p-2">{playerCard}</button
+			>
+		{:else}
+			<button class="rounded border p-2">{playerCard}</button>
+		{/if}
+	{/each}
 </div>
-
-<p>{$playerId === $hostStore?.id ? 'Im god' : 'Im a piece of shit'}</p>
-
-<p>{$turn.current.player.id === $playerId ? "That's my turn !" : 'Not my turn yet...'}</p>
-
-{#if yourTurn}
-	<button onclick={() => endTurn($gameId)}>Terminer le tour</button>
-{/if}

@@ -2,6 +2,7 @@ import type { GameData, GameId } from '../contracts/game.js';
 import type { PlayerId } from '../contracts/player.js';
 import { Player } from '../player/player.js';
 import { Turn } from '../turn/turn.js';
+import { Cards } from '../constants/cards.js';
 
 const uuid = crypto.randomUUID();
 
@@ -34,7 +35,18 @@ export class Game {
 		return this.players;
 	}
 
+	distribueCards(): void {
+		const shuffledCards = Cards.sort(() => Math.random() - 0.5);
+		const cardsPerPlayer = Math.floor(shuffledCards.length / this.players.length);
+		const remainingCards = shuffledCards.slice(cardsPerPlayer * this.players.length);
+
+		this.players.forEach((player, index) => {
+			player.cards = shuffledCards.slice(index * cardsPerPlayer, (index + 1) * cardsPerPlayer);
+		});
+	}
+
 	start(): void {
+		this.distribueCards();
 		this.nextTurn();
 	}
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { socket } from '$lib/socket';
 	import { goto } from '$app/navigation';
-	import { playerId, players, host as hostStore, gameId as gameIdStore } from '$lib/stores/game';
+	import { player, players, host as hostStore, gameId as gameIdStore } from '$lib/stores/game';
 	import type { Player } from '$lib/stores/game';
 
 	function createGame(event: Event) {
@@ -18,8 +18,8 @@
 			hostStore.set(data.players.find((player: Player) => player.id === data.hostId));
 			gameIdStore.set(data.id);
 		});
-		socket.on('playerId', (data) => {
-			playerId.set(data);
+		socket.on('player', (data) => {
+			player.set(data);
 		});
 		goto('/lobby');
 	}
@@ -39,8 +39,8 @@
 			hostStore.set(data.players.find((player: Player) => player.id === data.hostId));
 			gameIdStore.set(data.id);
 		});
-		socket.on('playerId', (data) => {
-			playerId.set(data);
+		socket.on('player', (data) => {
+			player.set(data);
 		});
 		goto('/lobby');
 	}

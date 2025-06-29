@@ -42,10 +42,10 @@ export function socketIOPlugin(): Plugin {
 					createdGame.data.hostId = player.data.id;
 
 					socket.data.gameId = createdGameId;
-					socket.data.playerId = player.data.id;
+					socket.data.player = player.data;
 					socket.data.hostId = player.data.id;
 
-					socket.emit('playerId', player.data.id);
+					socket.emit('player', player.data);
 					socket.emit('gameCreated', createdGame.data);
 				});
 
@@ -70,9 +70,9 @@ export function socketIOPlugin(): Plugin {
 					game.addPlayer(player);
 
 					socket.data.gameId = game.data.id;
-					socket.data.playerId = player.data.id;
+					socket.data.player = player.data;
 
-					socket.emit('playerId', player.data.id);
+					socket.emit('player', player.data);
 					io.to(gameId).emit('gameUpdate', game.data);
 					console.log('game.data : ', game.data);
 				});
@@ -91,12 +91,16 @@ export function socketIOPlugin(): Plugin {
 					io.to(gameId).emit('gameStarted', game.data);
 				});
 
-				socket.on('turnEnd', (gameId) => {
+				socket.on('playCard', ({ gameId, playerId, card }) => {
 					const game = gameRepository.getGameById(socket.data.gameId);
 
-					game.turn.endTurn();
+					const player = game?.getPlayerById(playerId);
 
-					io.to(gameId).emit('gameData', game.data);
+					player.cards = player?.cards.filter((c) => c !== card);
+
+					game?.turn?.endTurn();
+
+					io.to(gameId).emit('gameData', game?.data);
 				});
 			});
 		}
