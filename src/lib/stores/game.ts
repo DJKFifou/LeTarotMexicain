@@ -4,6 +4,7 @@ export interface Player {
 	id: string;
 	name: string;
 	cards: number[];
+	points: number;
 }
 
 export interface Turn {
@@ -15,11 +16,14 @@ export interface Turn {
 export const players = writable<Player[]>([]);
 export const host = writable<Player | null>(null);
 export const gameId = writable<string>('');
-export const player = writable<Player>({ id: '', name: '', cards: [] });
+export const player = writable<Player>({ id: '', name: '', cards: [], points: 0 });
 export const turn = writable<Turn>({
 	current: {
-		player: { id: '', name: '', cards: [] }
+		player: { id: '', name: '', cards: [], points: 0 }
 	},
 	played: [],
 	remaining: []
 });
+export const currentTurnPlays = writable<{ card: number; playerId: string }[]>([]);
+export const finalWinner = writable<string | null>(null);
+export const distributor = writable<Player | null>(null);

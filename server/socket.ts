@@ -96,11 +96,27 @@ export function socketIOPlugin(): Plugin {
 
 					const player = game?.getPlayerById(playerId);
 
-					player.cards = player?.cards.filter((c) => c !== card);
+					game?.addCurrentTurnPlay({ card, playerId });
+
+					player.cards = player.cards.filter((c) => c !== card);
 
 					game?.turn?.endTurn();
 
 					io.to(gameId).emit('gameData', game?.data);
+				});
+
+				socket.on('endTurn', (gameId) => {
+					const game = gameRepository.getGameById(gameId);
+
+					game?.addPointToPlayer();
+
+					game?.checkRound();
+
+					game?.clearCurrentTurnPlays();
+
+					setTimeout(() => {
+						io.to(gameId).emit('gameData', game?.data);
+					}, 1000);
 				});
 			});
 		}
