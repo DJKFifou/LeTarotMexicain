@@ -113,7 +113,7 @@ export function socketIOPlugin(): Plugin {
 
 					game?.playCard();
 
-					io.to(gameId).emit('turnAction', game?.data.turn);
+					io.to(gameId).emit('turnAction', game?.data.action);
 				});
 
 				socket.on('playCard', ({ gameId, playerId, card }) => {
@@ -135,7 +135,7 @@ export function socketIOPlugin(): Plugin {
 				socket.on('endTurn', (gameId) => {
 					const game = gameRepository.getGameById(gameId);
 
-					game?.addPointToPlayer();
+					game?.addCurrentTurnPointToPlayer();
 
 					game?.checkRound();
 

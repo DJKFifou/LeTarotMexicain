@@ -8,13 +8,14 @@
 		turn,
 		currentTurnGuesses,
 		currentTurnPlays,
+		currentTurnPoints,
 		finalWinner,
-		action,
-		currentTurnPoints
+		action
 	} from '$lib/stores/game';
 	$: yourTurn = $turn.current.player.id === $playerStore.id;
-	$: yourTurnToAsk = yourTurn && $turn.current.action === 'askTrick';
-	$: yourTurnToPlay = yourTurn && $turn.current.action === 'playCard';
+	$: yourTurnToAsk = yourTurn && $action === 'askTrick';
+	$: yourTurnToPlay = yourTurn && $action === 'playCard';
+	$: console.log('Valeur du store :', $currentTurnPoints);
 	$: {
 		const currentPlayer = $players.find((p) => p.id === $playerStore.id);
 		if (currentPlayer) {
@@ -58,6 +59,13 @@
 		turn.set(data.turn);
 		currentTurnGuesses.set(data.currentTurnGuesses);
 		currentTurnPlays.set(data.currentTurnPlays);
+		currentTurnPoints.set(
+			data.players.map((player) => ({
+				playerId: player.id,
+				turnPoints: player.currentTurnPoints
+			}))
+		);
+		action.set(data.action);
 	});
 
 	socket.on('cardsUpdate', (data) => {
@@ -87,7 +95,7 @@
 
 	socket.on('turnAction', (data) => {
 		console.log('📥 turnAction received:', data);
-		turn.set(data);
+		action.set(data);
 	});
 </script>
 
@@ -146,12 +154,17 @@
 <div class="absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-4">
 	{#each $players as player}
 		<div class="flex flex-col items-center gap-2 text-center">
-			{#if $currentTurnGuesses.find((guess) => guess.playerId === player.id)}
+			<div class="flex">
 				<p>
-					{player.turnPoints}/{$currentTurnGuesses.find((guess) => guess.playerId === player.id)
-						?.guess}
+					{$currentTurnPoints && $currentTurnGuesses
+						? $currentTurnPoints.find((turnPoints) => turnPoints.playerId === player.id)
+								?.turnPoints + '/'
+						: 0}
 				</p>
-			{/if}
+				<p>
+					{$currentTurnGuesses.find((guess) => guess.playerId === player.id)?.guess}
+				</p>
+			</div>
 			<p>{player.finalPoints}</p>
 			<p>{player.name}</p>
 		</div>

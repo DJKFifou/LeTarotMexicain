@@ -36,7 +36,7 @@ export const turn = writable<Turn>({
 });
 export const currentTurnGuesses = writable<{ playerId: string; guess: number }[]>([]);
 export const currentTurnPlays = writable<{ card: number; playerId: string }[]>([]);
+export const currentTurnPoints = writable<{ playerId: string; turnPoints: number }[]>([]);
 export const finalWinner = writable<string | null>(null);
 export const distributor = writable<Player | null>(null);
 export const action = writable<Action>('askTrick');
-export const currentTurnPoints = writable<{ playerId: string; turnPoints: number }[]>([]);

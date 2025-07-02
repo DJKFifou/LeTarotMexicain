@@ -34,6 +34,7 @@ export class Game {
 		this.currentTurnPlays = [];
 		this.currentTurnWinner = null;
 		this.finalWinner = null;
+		this.action = 'askTrick';
 	}
 
 	addPlayer(player: Player): void {
@@ -52,7 +53,7 @@ export class Game {
 		return this.players;
 	}
 
-	addPointToPlayer(): void {
+	addCurrentTurnPointToPlayer(): void {
 		if (this.currentTurnPlays.length) {
 			const highestPlay = this.currentTurnPlays.reduce((prev, current) =>
 				prev.card > current.card ? prev : current
@@ -60,16 +61,28 @@ export class Game {
 			console.log('Highest play:', highestPlay);
 			const winningPlayer = this.getPlayerById(highestPlay.playerId);
 			if (winningPlayer) {
-				winningPlayer.finalPoints += 1;
+				winningPlayer.currentTurnPoints += 1;
 			}
 			console.log('Winning player:', winningPlayer?.data);
 		}
+	}
+
+	addFinalPointsToPlayers(): void {
+		this.players.forEach((player) => {
+			const playerGuess = this.currentTurnGuesses.find(
+				(guess) => guess.playerId === player.data.id
+			);
+			const guessValue = playerGuess?.guess ?? 0;
+			player.finalPoints += Math.abs(guessValue - player.currentTurnPoints);
+			player.currentTurnPoints = 0;
+		});
 	}
 
 	checkRound(): void {
 		const allPlayersHaveNoCards = this.players.every((player) => player.cards.length === 0);
 		if (allPlayersHaveNoCards) {
 			this.round += 1;
+			this.addFinalPointsToPlayers();
 
 			if (this.round <= Math.floor(Cards.length / this.players.length - 1)) {
 				this.distribueCards();
