@@ -45,7 +45,7 @@ export class Turn implements EntityClass<TurnData> {
 		});
 	}
 
-	protected getNextPlayer(): Player | null {
+	protected getNextPlayer(): Player | undefined {
 		const nextPlayerId = this.remaining[0] ?? null;
 
 		return this.game.getPlayerById(nextPlayerId);

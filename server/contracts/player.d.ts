@@ -4,7 +4,8 @@ export interface PlayerData {
 	id: PlayerId;
 	name: string;
 	cards?: number[];
-	points?: number;
+	currentTurnPoints?: number;
+	finalPoints?: number;
 }
 
 export interface PlayerInputData {

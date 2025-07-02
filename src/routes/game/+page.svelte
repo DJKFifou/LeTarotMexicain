@@ -6,10 +6,15 @@
 		host as hostStore,
 		gameId,
 		turn,
+		currentTurnGuesses,
 		currentTurnPlays,
-		finalWinner
+		finalWinner,
+		action,
+		currentTurnPoints
 	} from '$lib/stores/game';
 	$: yourTurn = $turn.current.player.id === $playerStore.id;
+	$: yourTurnToAsk = yourTurn && $turn.current.action === 'askTrick';
+	$: yourTurnToPlay = yourTurn && $turn.current.action === 'playCard';
 	$: {
 		const currentPlayer = $players.find((p) => p.id === $playerStore.id);
 		if (currentPlayer) {
@@ -30,8 +35,33 @@
 		});
 	}
 
+	function askedTrick(event: Event) {
+		event.preventDefault();
+
+		const form = event.currentTarget as HTMLFormElement;
+		const data = new FormData(form);
+
+		const numberOfTrick = data.get('askTrick')?.toString().trim();
+
+		console.log('Asked trick:', numberOfTrick);
+
+		socket.emit('askTrick', {
+			gameId: $gameId,
+			playerId: $playerStore.id,
+			numberOfTrick: numberOfTrick
+		});
+	}
+
 	socket.on('gameData', (data) => {
 		console.log('📥 gameData received:', data);
+		players.set(data.players);
+		turn.set(data.turn);
+		currentTurnGuesses.set(data.currentTurnGuesses);
+		currentTurnPlays.set(data.currentTurnPlays);
+	});
+
+	socket.on('cardsUpdate', (data) => {
+		console.log('📥 cardsUpdate received:', data);
 		players.set(data.players);
 		turn.set(data.turn);
 		currentTurnPlays.set(data.currentTurnPlays);
@@ -43,6 +73,21 @@
 			finalWinner.set(data.finalWinner);
 			console.log('Final winner:', data.finalWinner);
 		}
+	});
+
+	socket.on('guessesUpdate', (data) => {
+		console.log('📥 guessesUpdate received:', data);
+		currentTurnGuesses.set(data.currentTurnGuesses);
+		turn.set(data.turn);
+		if ($currentTurnGuesses.length >= $players.length) {
+			console.log('Ending guess phase...');
+			socket.emit('endGuessPhase', data.id);
+		}
+	});
+
+	socket.on('turnAction', (data) => {
+		console.log('📥 turnAction received:', data);
+		turn.set(data);
 	});
 </script>
 
@@ -56,9 +101,9 @@
 
 <div class="flex flex-wrap gap-2">
 	{#each $playerStore.cards as playerCard}
-		{#if yourTurn}
+		{#if yourTurnToPlay}
 			<button
-				onclick={() => playCard($gameId, playerCard)}
+				on:click={() => playCard($gameId, playerCard)}
 				class="cursor-pointer rounded border p-2">{playerCard}</button
 			>
 		{:else}
@@ -79,16 +124,35 @@
 		<p>Rappel des scores :</p>
 		<div>
 			{#each $players as player}
-				<p>{player.points}</p>
+				<p>{player.finalPoints}</p>
 			{/each}
 		</div>
 	</div>
 {/if}
 
+{#if yourTurnToAsk}
+	<form on:submit={askedTrick}>
+		<input
+			type="number"
+			name="askTrick"
+			id="askTrick"
+			placeholder="Nombre de plis"
+			class="border"
+		/>
+		<button type="submit" class="cursor-pointer bg-black p-1 text-white">Valider</button>
+	</form>
+{/if}
+
 <div class="absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-4">
 	{#each $players as player}
 		<div class="flex flex-col items-center gap-2 text-center">
-			<p>{player.points}</p>
+			{#if $currentTurnGuesses.find((guess) => guess.playerId === player.id)}
+				<p>
+					{player.turnPoints}/{$currentTurnGuesses.find((guess) => guess.playerId === player.id)
+						?.guess}
+				</p>
+			{/if}
+			<p>{player.finalPoints}</p>
 			<p>{player.name}</p>
 		</div>
 	{/each}

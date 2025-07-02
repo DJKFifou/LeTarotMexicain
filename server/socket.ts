@@ -91,6 +91,31 @@ export function socketIOPlugin(): Plugin {
 					io.to(gameId).emit('gameStarted', game.data);
 				});
 
+				socket.on('askTrick', ({ gameId, playerId, numberOfTrick }) => {
+					const game = gameRepository.getGameById(socket.data.gameId);
+
+					game?.addCurrentTurnGuesses({ playerId, guess: numberOfTrick });
+
+					game?.turn?.endTurn();
+
+					console.log('Guess trick :', game?.data);
+
+					io.to(gameId).emit('guessesUpdate', game?.data);
+				});
+
+				socket.on('endGuessPhase', (gameId) => {
+					const game = gameRepository.getGameById(gameId);
+
+					if (!game) {
+						console.error('Game not found:', gameId);
+						return;
+					}
+
+					game?.playCard();
+
+					io.to(gameId).emit('turnAction', game?.data.turn);
+				});
+
 				socket.on('playCard', ({ gameId, playerId, card }) => {
 					const game = gameRepository.getGameById(socket.data.gameId);
 
@@ -98,11 +123,13 @@ export function socketIOPlugin(): Plugin {
 
 					game?.addCurrentTurnPlay({ card, playerId });
 
-					player.cards = player.cards.filter((c) => c !== card);
+					if (player) {
+						player.cards = player.cards.filter((c) => c !== card);
+					}
 
 					game?.turn?.endTurn();
 
-					io.to(gameId).emit('gameData', game?.data);
+					io.to(gameId).emit('cardsUpdate', game?.data);
 				});
 
 				socket.on('endTurn', (gameId) => {

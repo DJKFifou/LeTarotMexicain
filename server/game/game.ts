@@ -1,4 +1,10 @@
-import type { GameData, GameId, currentTurnPlays } from '../contracts/game.js';
+import type {
+	GameData,
+	GameId,
+	CurrentTurnPlay,
+	CurrentTurnGuess,
+	Action
+} from '../contracts/game.js';
 import type { PlayerId } from '../contracts/player.js';
 import { Player } from '../player/player.js';
 import { Turn } from '../turn/turn.js';
@@ -12,9 +18,11 @@ export class Game {
 	protected players: Player[];
 	turn?: Turn | null;
 	round: number = 0;
-	currentTurnPlays: currentTurnPlays[] = [];
+	currentTurnGuesses: CurrentTurnGuess[] = [];
+	currentTurnPlays: CurrentTurnPlay[] = [];
 	currentTurnWinner: PlayerId | null = null;
 	finalWinner: PlayerId | null = null;
+	action: Action = 'askTrick';
 
 	constructor() {
 		this.id = uuid;
@@ -22,6 +30,7 @@ export class Game {
 		this.hostId = null;
 		this.turn = null;
 		this.round = 0;
+		this.currentTurnGuesses = [];
 		this.currentTurnPlays = [];
 		this.currentTurnWinner = null;
 		this.finalWinner = null;
@@ -51,7 +60,7 @@ export class Game {
 			console.log('Highest play:', highestPlay);
 			const winningPlayer = this.getPlayerById(highestPlay.playerId);
 			if (winningPlayer) {
-				winningPlayer.points += 1;
+				winningPlayer.finalPoints += 1;
 			}
 			console.log('Winning player:', winningPlayer?.data);
 		}
@@ -64,6 +73,8 @@ export class Game {
 
 			if (this.round <= Math.floor(Cards.length / this.players.length - 1)) {
 				this.distribueCards();
+				this.clearCurrentTurnGuesses();
+				this.askTrick();
 			} else {
 				this.checkWinner();
 			}
@@ -72,13 +83,21 @@ export class Game {
 
 	checkWinner(): void {
 		const winner = this.players.reduce((prev, current) =>
-			prev.points > current.points ? prev : current
+			prev.finalPoints > current.finalPoints ? prev : current
 		);
 		this.finalWinner = winner.data.name;
 		console.log('Final winner:', this.finalWinner);
 	}
 
-	addCurrentTurnPlay(play: currentTurnPlays): void {
+	addCurrentTurnGuesses(guess: CurrentTurnGuess): void {
+		this.currentTurnGuesses.push(guess);
+	}
+
+	clearCurrentTurnGuesses(): void {
+		this.currentTurnGuesses = [];
+	}
+
+	addCurrentTurnPlay(play: CurrentTurnPlay): void {
 		this.currentTurnPlays.push(play);
 	}
 
@@ -99,6 +118,27 @@ export class Game {
 	start(): void {
 		this.distribueCards();
 		this.nextTurn();
+		this.askTrick();
+	}
+
+	askTrick(): void {
+		if (!this.turn) {
+			this.turn = new Turn(this);
+		}
+
+		if (this.turn.current) {
+			this.action = 'askTrick';
+		}
+	}
+
+	playCard(): void {
+		if (!this.turn) {
+			this.turn = new Turn(this);
+		}
+
+		if (this.turn.current) {
+			this.action = 'playCard';
+		}
 	}
 
 	nextTurn(): void {
@@ -112,9 +152,11 @@ export class Game {
 			players: this.players.map((player) => player.data),
 			turn: this.turn?.data,
 			round: this.round,
+			currentTurnGuesses: this.currentTurnGuesses,
 			currentTurnPlays: this.currentTurnPlays,
 			currentTurnWinner: this.currentTurnWinner,
-			finalWinner: this.finalWinner
+			finalWinner: this.finalWinner,
+			action: this.action
 		};
 	}
 }
