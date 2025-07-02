@@ -3,7 +3,7 @@ import type { PlayerData } from '../contracts/player';
 export class Player {
 	protected id: string;
 	protected name: string;
-	cards: number[];
+	cards: (number | 'Excuse')[];
 	currentTurnPoints: number = 0;
 	finalPoints: number = 0;
 

@@ -3,7 +3,7 @@ import { writable } from 'svelte/store';
 export interface Player {
 	id: string;
 	name: string;
-	cards: number[];
+	cards: (number | 'Excuse')[];
 	turnPoints: number;
 	finalPoints: number;
 }

@@ -124,7 +124,11 @@ export function socketIOPlugin(): Plugin {
 					game?.addCurrentTurnPlay({ card, playerId });
 
 					if (player) {
-						player.cards = player.cards.filter((c) => c !== card);
+						if (card === 0 || card === 22) {
+							player.cards = player.cards.filter((c) => c !== 'Excuse');
+						} else {
+							player.cards = player.cards.filter((c) => c !== card);
+						}
 					}
 
 					game?.turn?.endTurn();
