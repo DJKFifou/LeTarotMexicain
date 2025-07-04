@@ -17,7 +17,8 @@ export class Turn implements EntityClass<TurnData> {
 
 		this.played = [];
 		this.current = null;
-		this.remaining = game.data.players.map((player) => player.id);
+
+		this.remaining = game.getPlayersByTurnOrder().map((player) => player.data.id);
 
 		this.nextPlayer();
 	}

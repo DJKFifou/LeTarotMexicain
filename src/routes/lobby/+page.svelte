@@ -4,6 +4,10 @@
 	import { goto } from '$app/navigation';
 	import type { Player } from '$lib/stores/game';
 
+	socket.on('disconnected', () => {
+		goto('/');
+	});
+
 	socket.on('gameCreated', (data) => {
 		players.set(data.players);
 		hostStore.set(data.players.find((player: Player) => player.id === data.hostId));
@@ -45,6 +49,10 @@
 		{/each}
 	</ul>
 </div>
+
+<!-- {#if $players.length >= 5}
+	<p>Salon plein !</p>
+{/if} -->
 
 {#if $player.id === $hostStore?.id}
 	<button onclick={() => startGame($gameId)} class="cursor-pointer underline">Start de game</button>

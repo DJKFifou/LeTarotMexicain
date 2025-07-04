@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { socket } from '$lib/socket';
+	import { goto } from '$app/navigation';
 	import {
 		player as playerStore,
 		players,
@@ -10,12 +11,12 @@
 		currentTurnPlays,
 		currentTurnPoints,
 		finalWinner,
-		action
+		action,
+		round
 	} from '$lib/stores/game';
 	$: yourTurn = $turn.current.player.id === $playerStore.id;
 	$: yourTurnToAsk = yourTurn && $action === 'askTrick';
 	$: yourTurnToPlay = yourTurn && $action === 'playCard';
-	$: console.log('Valeur du store :', $currentTurnPoints);
 	$: {
 		const currentPlayer = $players.find((p) => p.id === $playerStore.id);
 		if (currentPlayer) {
@@ -62,11 +63,6 @@
 			0
 		);
 
-		console.log('$turn.remaining.length:', $turn.remaining.length);
-		console.log('sumrOfTurnGuesses:', sumrOfTurnGuesses);
-		console.log('numberOfTrick:', Number(numberOfTrick));
-		console.log('$players[0].cards.length:', $players[0].cards.length);
-
 		if (
 			$turn.remaining.length < 1 &&
 			sumrOfTurnGuesses + Number(numberOfTrick) === $players[0].cards.length
@@ -75,12 +71,18 @@
 			return;
 		}
 
+		console.log('Asked trick:', numberOfTrick);
+
 		socket.emit('askTrick', {
 			gameId: $gameId,
 			playerId: $playerStore.id,
 			numberOfTrick: numberOfTrick
 		});
 	}
+
+	socket.on('disconnected', () => {
+		goto('/');
+	});
 
 	socket.on('gameData', (data) => {
 		console.log('📥 gameData received:', data);
@@ -95,6 +97,7 @@
 			}))
 		);
 		action.set(data.action);
+		round.set(data.round);
 	});
 
 	socket.on('cardsUpdate', (data) => {
@@ -136,24 +139,26 @@
 
 <p>{$turn.current.player.id === $playerStore.id ? "That's my turn !" : 'Not my turn yet...'}</p>
 
-<div class="flex flex-wrap gap-2">
-	{#each $playerStore.cards as playerCard}
-		{#if yourTurnToPlay}
-			{#if playerCard === 'Excuse'}
-				<button on:click={() => playExcuseCard()} class="cursor-pointer rounded border p-2"
-					>{playerCard}</button
-				>
+{#if $round !== 4}
+	<div class="flex flex-wrap gap-2">
+		{#each $playerStore.cards as playerCard}
+			{#if yourTurnToPlay}
+				{#if playerCard === 'Excuse'}
+					<button on:click={() => playExcuseCard()} class="cursor-pointer rounded border p-2"
+						>{playerCard}</button
+					>
+				{:else}
+					<button
+						on:click={() => playCard($gameId, playerCard)}
+						class="cursor-pointer rounded border p-2">{playerCard}</button
+					>
+				{/if}
 			{:else}
-				<button
-					on:click={() => playCard($gameId, playerCard)}
-					class="cursor-pointer rounded border p-2">{playerCard}</button
-				>
+				<button class="rounded border p-2">{playerCard}</button>
 			{/if}
-		{:else}
-			<button class="rounded border p-2">{playerCard}</button>
-		{/if}
-	{/each}
-</div>
+		{/each}
+	</div>
+{/if}
 
 {#if showExcuseCardOptionValue}
 	<div
@@ -213,7 +218,10 @@
 
 <div class="absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-4">
 	{#each $players as player}
-		<div class="flex flex-col items-center gap-2 text-center">
+		<div class="flex flex-col items-center justify-end gap-2 text-center">
+			{#if $round === 4 && player.id !== $playerStore.id}
+				<p>Carte du joueur: {player.cards}</p>
+			{/if}
 			<div class="flex">
 				<p>
 					{$currentTurnPoints && $currentTurnGuesses

@@ -3,7 +3,7 @@ export type PlayerId = string;
 export interface PlayerData {
 	id: PlayerId;
 	name: string;
-	cards?: number[];
+	cards?: (number | 'Excuse')[];
 	currentTurnPoints?: number;
 	finalPoints?: number;
 }

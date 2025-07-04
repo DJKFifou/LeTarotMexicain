@@ -17,6 +17,7 @@ export type Action = 'askTrick' | 'playCard';
 export interface GameData {
 	id: GameId;
 	hostId: PlayerId | null;
+	dealerId: PlayerId | null;
 	players: Array<PlayerData>;
 	turn?: TurnData;
 	round: number;

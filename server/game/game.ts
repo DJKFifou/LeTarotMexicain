@@ -15,6 +15,7 @@ const uuid = crypto.randomUUID();
 export class Game {
 	protected id: GameId;
 	protected hostId: PlayerId | null;
+	protected dealerId: PlayerId | null;
 	protected players: Player[];
 	turn?: Turn | null;
 	round: number = 0;
@@ -28,6 +29,7 @@ export class Game {
 		this.id = uuid;
 		this.players = [];
 		this.hostId = null;
+		this.dealerId = null;
 		this.turn = null;
 		this.round = 0;
 		this.currentTurnGuesses = [];
@@ -42,6 +44,10 @@ export class Game {
 
 		if (!this.hostId) {
 			this.hostId = player.data.id;
+		}
+
+		if (!this.dealerId) {
+			this.dealerId = player.data.id;
 		}
 	}
 
@@ -78,19 +84,40 @@ export class Game {
 		});
 	}
 
-	checkRound(): void {
-		const allPlayersHaveNoCards = this.players.every((player) => player.cards.length === 0);
-		if (allPlayersHaveNoCards) {
-			this.round += 1;
-			this.addFinalPointsToPlayers();
+	restartGame(): void {
+		this.round = 0;
+		this.currentTurnGuesses = [];
+		this.currentTurnPlays = [];
+		this.currentTurnWinner = null;
+		this.finalWinner = null;
+		this.players.forEach((player) => {
+			player.cards = [];
+			player.currentTurnPoints = 0;
+			player.finalPoints = 0;
+		});
+		this.dealerId = this.hostId;
+		this.turn = null;
+		this.distribueCards();
+		this.askTrick();
+	}
 
-			if (this.round <= Math.floor(Cards.length / this.players.length - 1)) {
-				this.distribueCards();
-				this.clearCurrentTurnGuesses();
-				this.askTrick();
-			} else {
-				this.checkWinner();
+	checkRound(): void {
+		if (this.players.every((player) => player.cards.length === 0)) {
+			this.round += 1;
+
+			this.addFinalPointsToPlayers();
+			this.clearCurrentTurnGuesses();
+
+			if (this.round > 4) {
+				this.round = 0;
+				if (this.dealerId === this.players[this.players.length - 1].data.id) {
+					this.checkWinner();
+					return;
+				}
 			}
+
+			this.distribueCards();
+			this.askTrick();
 		}
 	}
 
@@ -119,12 +146,19 @@ export class Game {
 	}
 
 	distribueCards(): void {
-		const shuffledCards = Cards.sort(() => Math.random() - 0.5);
-		const remainingCards = shuffledCards.slice(this.round * this.players.length);
-		const cardsPerPlayer = Math.floor(remainingCards.length / this.players.length);
+		const shuffledCards = [...Cards];
+
+		for (let i = shuffledCards.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
+		}
+
+		const maxCardsPerPlayer = Math.max(1, 4 - this.round);
 
 		this.players.forEach((player, index) => {
-			player.cards = shuffledCards.slice(index * cardsPerPlayer, (index + 1) * cardsPerPlayer);
+			const start = index * maxCardsPerPlayer;
+			const end = start + maxCardsPerPlayer;
+			player.cards = shuffledCards.slice(start, end);
 		});
 	}
 
@@ -158,10 +192,38 @@ export class Game {
 		this.turn = new Turn(this);
 	}
 
+	rotateDealer(): void {
+		if (!this.dealerId || this.players.length === 0) {
+			return;
+		}
+
+		const currentDealerIndex = this.players.findIndex((player) => player.data.id === this.dealerId);
+
+		if (currentDealerIndex !== -1) {
+			const nextDealerIndex = (currentDealerIndex + 1) % this.players.length;
+			this.dealerId = this.players[nextDealerIndex].data.id;
+		}
+	}
+
+	getPlayersByTurnOrder(): Player[] {
+		if (!this.dealerId || this.players.length === 0) {
+			return this.players;
+		}
+
+		const dealerIndex = this.players.findIndex((player) => player.data.id === this.dealerId);
+
+		if (dealerIndex === -1) {
+			return this.players;
+		}
+
+		return [...this.players.slice(dealerIndex), ...this.players.slice(0, dealerIndex)];
+	}
+
 	get data(): GameData {
 		return {
 			id: this.id,
 			hostId: this.hostId,
+			dealerId: this.dealerId,
 			players: this.players.map((player) => player.data),
 			turn: this.turn?.data,
 			round: this.round,

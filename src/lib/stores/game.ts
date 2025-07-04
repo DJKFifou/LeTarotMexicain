@@ -11,7 +11,7 @@ export interface Player {
 export type Action = 'askTrick' | 'playCard';
 
 export interface Turn {
-	current: { player: Player; action: Action };
+	current: { player: Player };
 	played: Player[];
 	remaining: Player[];
 }
@@ -28,8 +28,7 @@ export const player = writable<Player>({
 });
 export const turn = writable<Turn>({
 	current: {
-		player: { id: '', name: '', cards: [], turnPoints: 0, finalPoints: 0 },
-		action: 'askTrick'
+		player: { id: '', name: '', cards: [], turnPoints: 0, finalPoints: 0 }
 	},
 	played: [],
 	remaining: []
@@ -38,5 +37,5 @@ export const currentTurnGuesses = writable<{ playerId: string; guess: number }[]
 export const currentTurnPlays = writable<{ card: number; playerId: string }[]>([]);
 export const currentTurnPoints = writable<{ playerId: string; turnPoints: number }[]>([]);
 export const finalWinner = writable<string | null>(null);
-export const distributor = writable<Player | null>(null);
 export const action = writable<Action>('askTrick');
+export const round = writable<number>(0);

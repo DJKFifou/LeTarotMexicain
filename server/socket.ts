@@ -22,6 +22,7 @@ export function socketIOPlugin(): Plugin {
 
 				socket.on('disconnect', (reason) => {
 					console.log('Déconnecté :', reason);
+					socket.emit('disconnected', {});
 				});
 
 				socket.on('reconnect', (attemptNumber) => {
@@ -74,7 +75,7 @@ export function socketIOPlugin(): Plugin {
 
 					socket.emit('player', player.data);
 					io.to(gameId).emit('gameUpdate', game.data);
-					console.log('game.data : ', game.data);
+					console.log('gameUpdate : ', game.data);
 				});
 
 				socket.on('startGame', (gameId) => {
@@ -94,13 +95,26 @@ export function socketIOPlugin(): Plugin {
 				socket.on('askTrick', ({ gameId, playerId, numberOfTrick }) => {
 					const game = gameRepository.getGameById(socket.data.gameId);
 
-					game?.addCurrentTurnGuesses({ playerId, guess: numberOfTrick });
+					if (!game) {
+						console.error('Game not found:', gameId);
+						return;
+					}
 
-					game?.turn?.endTurn();
+					game.addCurrentTurnGuesses({ playerId, guess: numberOfTrick });
 
-					console.log('Guess trick :', game?.data);
+					game.turn?.endTurn();
 
-					io.to(gameId).emit('guessesUpdate', game?.data);
+					console.log('Guess trick :', game.data);
+
+					io.to(gameId).emit('guessesUpdate', game.data);
+
+					if (game.round >= 4) {
+						socket.emit('playCard', {
+							gameId: gameId,
+							playerId: playerId,
+							card: numberOfTrick
+						});
+					}
 				});
 
 				socket.on('endGuessPhase', (gameId) => {
@@ -111,17 +125,22 @@ export function socketIOPlugin(): Plugin {
 						return;
 					}
 
-					game?.playCard();
+					game.playCard();
 
-					io.to(gameId).emit('turnAction', game?.data.action);
+					io.to(gameId).emit('turnAction', game.data.action);
 				});
 
 				socket.on('playCard', ({ gameId, playerId, card }) => {
 					const game = gameRepository.getGameById(socket.data.gameId);
 
-					const player = game?.getPlayerById(playerId);
+					if (!game) {
+						console.error('Game not found:', gameId);
+						return;
+					}
 
-					game?.addCurrentTurnPlay({ card, playerId });
+					const player = game.getPlayerById(playerId);
+
+					game.addCurrentTurnPlay({ card, playerId });
 
 					if (player) {
 						if (card === 0 || card === 22) {
@@ -131,23 +150,41 @@ export function socketIOPlugin(): Plugin {
 						}
 					}
 
-					game?.turn?.endTurn();
+					game.turn?.endTurn();
 
-					io.to(gameId).emit('cardsUpdate', game?.data);
+					io.to(gameId).emit('cardsUpdate', game.data);
 				});
 
 				socket.on('endTurn', (gameId) => {
 					const game = gameRepository.getGameById(gameId);
 
-					game?.addCurrentTurnPointToPlayer();
+					if (!game) {
+						console.error('Game not found:', gameId);
+						return;
+					}
 
-					game?.checkRound();
+					game.addCurrentTurnPointToPlayer();
 
-					game?.clearCurrentTurnPlays();
+					game.checkRound();
+
+					game.clearCurrentTurnPlays();
 
 					setTimeout(() => {
-						io.to(gameId).emit('gameData', game?.data);
+						io.to(gameId).emit('gameData', game.data);
 					}, 1000);
+				});
+
+				socket.on('restartGame', (gameId) => {
+					const game = gameRepository.getGameById(gameId);
+
+					if (!game) {
+						console.error('Game not found:', gameId);
+						return;
+					}
+
+					game.restartGame();
+
+					io.to(gameId).emit('gameData', game.data);
 				});
 			});
 		}
