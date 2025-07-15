@@ -16,7 +16,7 @@ export class Game {
 	protected id: GameId;
 	protected hostId: PlayerId | null;
 	protected dealerId: PlayerId | null;
-	protected players: Player[];
+	public players: Player[];
 	turn?: Turn | null;
 	round: number = 0;
 	currentTurnGuesses: CurrentTurnGuess[] = [];
@@ -79,7 +79,11 @@ export class Game {
 				(guess) => guess.playerId === player.data.id
 			);
 			const guessValue = playerGuess?.guess ?? 0;
-			player.finalPoints += Math.abs(guessValue - player.currentTurnPoints);
+			const pointsToAdd =
+				guessValue === player.currentTurnPoints
+					? 0
+					: Math.abs(guessValue - player.currentTurnPoints);
+			player.finalPoints += pointsToAdd;
 			player.currentTurnPoints = 0;
 		});
 	}
@@ -110,7 +114,11 @@ export class Game {
 
 			if (this.round > 4) {
 				this.round = 0;
-				if (this.dealerId === this.players[this.players.length - 1].data.id) {
+				console.log('Round finished, rotating dealer...');
+				console.log('Current dealer:', this.dealerId);
+				this.rotateDealer();
+				console.log('New dealer:', this.dealerId);
+				if (this.dealerId === this.hostId) {
 					this.checkWinner();
 					return;
 				}
@@ -123,7 +131,7 @@ export class Game {
 
 	checkWinner(): void {
 		const winner = this.players.reduce((prev, current) =>
-			prev.finalPoints > current.finalPoints ? prev : current
+			prev.finalPoints < current.finalPoints ? prev : current
 		);
 		this.finalWinner = winner.data.name;
 		console.log('Final winner:', this.finalWinner);
@@ -169,9 +177,7 @@ export class Game {
 	}
 
 	askTrick(): void {
-		if (!this.turn) {
-			this.turn = new Turn(this);
-		}
+		this.turn = new Turn(this);
 
 		if (this.turn.current) {
 			this.action = 'askTrick';
@@ -219,6 +225,41 @@ export class Game {
 		return [...this.players.slice(dealerIndex), ...this.players.slice(0, dealerIndex)];
 	}
 
+	playRound4Automatically(): void {
+		this.players.forEach((player) => {
+			if (player.cards.length > 0) {
+				const cardValue = player.cards[0];
+				let numericCardValue: number;
+
+				if (cardValue === 'Excuse') {
+					const playerGuess = this.currentTurnGuesses.find(
+						(guess) => guess.playerId === player.data.id
+					);
+					const guessValue = playerGuess?.guess ?? 0;
+					numericCardValue = guessValue === 0 ? 0 : 22;
+				} else {
+					numericCardValue = cardValue;
+				}
+
+				this.addCurrentTurnPlay({ card: numericCardValue, playerId: player.data.id });
+			}
+		});
+
+		this.addCurrentTurnPointToPlayer();
+	}
+
+	finishRound4(): void {
+		this.players.forEach((player) => {
+			player.cards = [];
+		});
+
+		this.checkRound();
+
+		this.clearCurrentTurnPlays();
+
+		this.action = 'askTrick';
+	}
+
 	get data(): GameData {
 		return {
 			id: this.id,
@@ -233,5 +274,63 @@ export class Game {
 			finalWinner: this.finalWinner,
 			action: this.action
 		};
+	}
+
+	getDataForPlayer(playerId: PlayerId): GameData {
+		return {
+			id: this.id,
+			hostId: this.hostId,
+			dealerId: this.dealerId,
+			players: this.players.map((player) => {
+				if (player.data.id === playerId) {
+					return player.data;
+				} else {
+					return {
+						...player.data,
+						cards: new Array(player.cards.length).fill(null)
+					};
+				}
+			}),
+			turn: this.turn?.data,
+			round: this.round,
+			currentTurnGuesses: this.currentTurnGuesses,
+			currentTurnPlays: this.currentTurnPlays,
+			currentTurnWinner: this.currentTurnWinner,
+			finalWinner: this.finalWinner,
+			action: this.action
+		};
+	}
+
+	getDataForPlayerRound4(playerId: PlayerId): GameData {
+		return {
+			id: this.id,
+			hostId: this.hostId,
+			dealerId: this.dealerId,
+			players: this.players.map((player) => {
+				if (player.data.id === playerId) {
+					return {
+						...player.data,
+						cards: new Array(player.cards.length).fill(null)
+					};
+				} else {
+					return player.data;
+				}
+			}),
+			turn: this.turn?.data,
+			round: this.round,
+			currentTurnGuesses: this.currentTurnGuesses,
+			currentTurnPlays: this.currentTurnPlays,
+			currentTurnWinner: this.currentTurnWinner,
+			finalWinner: this.finalWinner,
+			action: this.action
+		};
+	}
+
+	getSecureDataForPlayer(playerId: PlayerId): GameData {
+		if (this.round === 4) {
+			return this.getDataForPlayerRound4(playerId);
+		} else {
+			return this.getDataForPlayer(playerId);
+		}
 	}
 }

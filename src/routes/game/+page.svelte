@@ -23,12 +23,8 @@
 			playerStore.set(currentPlayer);
 		}
 	}
-	$: winner = $finalWinner;
 	$: showExcuseCardOptionValue = false;
-
-	console.log('players:', $players);
-	console.log('playerStore:', $playerStore);
-
+	$: showCard = false;
 	interface Player {
 		id: string;
 		name: string;
@@ -42,7 +38,6 @@
 	}
 
 	function playCard(gameId: string, playerCard: number) {
-		console.log('Play card : ', playerCard);
 		socket.emit('playCard', {
 			gameId: gameId,
 			playerId: $playerStore.id,
@@ -58,20 +53,23 @@
 
 		const numberOfTrick = data.get('askTrick')?.toString().trim();
 
-		const sumrOfTurnGuesses = $currentTurnGuesses.reduce(
+		if (!numberOfTrick || isNaN(Number(numberOfTrick))) {
+			alert('Veuillez entrer un nombre valide de plis');
+			return;
+		}
+
+		const sumOfTurnGuesses = $currentTurnGuesses.reduce(
 			(acc, guess) => acc + Number(guess.guess),
 			0
 		);
 
 		if (
 			$turn.remaining.length < 1 &&
-			sumrOfTurnGuesses + Number(numberOfTrick) === $players[0].cards.length
+			sumOfTurnGuesses + Number(numberOfTrick) === $players[0].cards.length
 		) {
 			alert('Le nombre total de plis ne doit pas être égal au nombre de cartes');
 			return;
 		}
-
-		console.log('Asked trick:', numberOfTrick);
 
 		socket.emit('askTrick', {
 			gameId: $gameId,
@@ -84,8 +82,20 @@
 		goto('/');
 	});
 
+	socket.on('currentTurnPoints', (data) => {
+		currentTurnPoints.set(
+			data.map((turnPoints: { playerId: string; turnPoints: number }) => ({
+				playerId: turnPoints.playerId,
+				turnPoints: turnPoints.turnPoints
+			}))
+		);
+	});
+
+	socket.on('finalWinner', (data) => {
+		finalWinner.set(data);
+	});
+
 	socket.on('gameData', (data) => {
-		console.log('📥 gameData received:', data);
 		players.set(data.players);
 		turn.set(data.turn);
 		currentTurnGuesses.set(data.currentTurnGuesses);
@@ -98,36 +108,31 @@
 		);
 		action.set(data.action);
 		round.set(data.round);
+		finalWinner.set(data.finalWinner);
 	});
 
 	socket.on('cardsUpdate', (data) => {
-		console.log('📥 cardsUpdate received:', data);
 		players.set(data.players);
 		turn.set(data.turn);
 		currentTurnPlays.set(data.currentTurnPlays);
+		finalWinner.set(data.finalWinner);
 		if (data.currentTurnPlays.length >= $players.length) {
-			console.log('Ending turn...');
 			socket.emit('endTurn', data.id);
-		}
-		if (data.finalWinner) {
-			finalWinner.set(data.finalWinner);
-			console.log('Final winner:', data.finalWinner);
 		}
 	});
 
 	socket.on('guessesUpdate', (data) => {
-		console.log('📥 guessesUpdate received:', data);
 		currentTurnGuesses.set(data.currentTurnGuesses);
 		turn.set(data.turn);
 		if ($currentTurnGuesses.length >= $players.length) {
-			console.log('Ending guess phase...');
 			socket.emit('endGuessPhase', data.id);
+			if ($round === 4) {
+				showCard = true;
+				setTimeout(() => {
+					showCard = false;
+				}, 2500);
+			}
 		}
-	});
-
-	socket.on('turnAction', (data) => {
-		console.log('📥 turnAction received:', data);
-		action.set(data);
 	});
 </script>
 
@@ -190,7 +195,7 @@
 	{/each}
 </div>
 
-{#if winner}
+{#if $finalWinner}
 	<div class="absolute top-1/2 left-1/2 -translate-1/2">
 		<p>Le gagnant est : {$finalWinner}</p>
 		<p>Rappel des scores :</p>
@@ -199,6 +204,24 @@
 				<p>{player.finalPoints}</p>
 			{/each}
 		</div>
+		<button
+			on:click={() => {
+				socket.emit('restartGame', $gameId);
+				goto('/lobby');
+			}}
+			class="cursor-pointer bg-black p-1 text-white"
+		>
+			Rejouer
+		</button>
+		<button
+			on:click={() => {
+				socket.emit('leaveGame', $gameId);
+				goto('/');
+			}}
+			class="cursor-pointer bg-black p-1 text-white"
+		>
+			Retour à l'accueil
+		</button>
 	</div>
 {/if}
 
@@ -219,7 +242,7 @@
 <div class="absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-4">
 	{#each $players as player}
 		<div class="flex flex-col items-center justify-end gap-2 text-center">
-			{#if $round === 4 && player.id !== $playerStore.id}
+			{#if ($round === 4 && player.id !== $playerStore.id) || showCard}
 				<p>Carte du joueur: {player.cards}</p>
 			{/if}
 			<div class="flex">

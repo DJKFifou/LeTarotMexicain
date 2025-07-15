@@ -21,12 +21,10 @@
 	});
 
 	function startGame(gameId: string) {
-		console.log('Starting game...');
 		socket.emit('startGame', gameId);
 	}
 
 	socket.on('gameStarted', (data) => {
-		console.log('data :', data);
 		players.set(data.players);
 		turn.set(data.turn);
 		goto('/game');
@@ -50,9 +48,9 @@
 	</ul>
 </div>
 
-<!-- {#if $players.length >= 5}
+{#if $players.length >= 5}
 	<p>Salon plein !</p>
-{/if} -->
+{/if}
 
 {#if $player.id === $hostStore?.id}
 	<button onclick={() => startGame($gameId)} class="cursor-pointer underline">Start de game</button>

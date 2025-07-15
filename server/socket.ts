@@ -2,6 +2,19 @@ import type { Plugin } from 'vite';
 import { Server } from 'socket.io';
 import { gameRepository } from './game/game.repository.js';
 import { Player } from './player/player.js';
+import { Game } from './game/game.js';
+
+function sendFilteredDataToRoom(io: Server, gameId: string, game: Game, eventName: string) {
+	const socketsInRoom = io.sockets.adapter.rooms.get(gameId);
+	if (socketsInRoom) {
+		for (const socketId of socketsInRoom) {
+			const targetSocket = io.sockets.sockets.get(socketId);
+			if (targetSocket && targetSocket.data.player) {
+				targetSocket.emit(eventName, game.getSecureDataForPlayer(targetSocket.data.player.id));
+			}
+		}
+	}
+}
 
 export function socketIOPlugin(): Plugin {
 	return {
@@ -47,7 +60,7 @@ export function socketIOPlugin(): Plugin {
 					socket.data.hostId = player.data.id;
 
 					socket.emit('player', player.data);
-					socket.emit('gameCreated', createdGame.data);
+					socket.emit('gameCreated', createdGame.getSecureDataForPlayer(player.data.id));
 				});
 
 				socket.on('gameJoin', ({ gameId, playerInputData }) => {
@@ -74,8 +87,9 @@ export function socketIOPlugin(): Plugin {
 					socket.data.player = player.data;
 
 					socket.emit('player', player.data);
-					io.to(gameId).emit('gameUpdate', game.data);
-					console.log('gameUpdate : ', game.data);
+
+					sendFilteredDataToRoom(io, gameId, game, 'gameUpdate');
+					console.log('gameUpdate sent to all players with filtered data');
 				});
 
 				socket.on('startGame', (gameId) => {
@@ -89,7 +103,7 @@ export function socketIOPlugin(): Plugin {
 
 					game.start();
 
-					io.to(gameId).emit('gameStarted', game.data);
+					sendFilteredDataToRoom(io, gameId, game, 'gameStarted');
 				});
 
 				socket.on('askTrick', ({ gameId, playerId, numberOfTrick }) => {
@@ -106,14 +120,18 @@ export function socketIOPlugin(): Plugin {
 
 					console.log('Guess trick :', game.data);
 
-					io.to(gameId).emit('guessesUpdate', game.data);
+					sendFilteredDataToRoom(io, gameId, game, 'guessesUpdate');
 
-					if (game.round >= 4) {
-						socket.emit('playCard', {
-							gameId: gameId,
-							playerId: playerId,
-							card: numberOfTrick
-						});
+					if (game.round === 4 && game.currentTurnGuesses.length >= game.players.length) {
+						game.playRound4Automatically();
+
+						sendFilteredDataToRoom(io, gameId, game, 'gameData');
+
+						setTimeout(() => {
+							game.finishRound4();
+
+							sendFilteredDataToRoom(io, gameId, game, 'gameData');
+						}, 2000);
 					}
 				});
 
@@ -126,8 +144,7 @@ export function socketIOPlugin(): Plugin {
 					}
 
 					game.playCard();
-
-					io.to(gameId).emit('turnAction', game.data.action);
+					sendFilteredDataToRoom(io, gameId, game, 'gameData');
 				});
 
 				socket.on('playCard', ({ gameId, playerId, card }) => {
@@ -152,7 +169,7 @@ export function socketIOPlugin(): Plugin {
 
 					game.turn?.endTurn();
 
-					io.to(gameId).emit('cardsUpdate', game.data);
+					sendFilteredDataToRoom(io, gameId, game, 'cardsUpdate');
 				});
 
 				socket.on('endTurn', (gameId) => {
@@ -170,8 +187,8 @@ export function socketIOPlugin(): Plugin {
 					game.clearCurrentTurnPlays();
 
 					setTimeout(() => {
-						io.to(gameId).emit('gameData', game.data);
-					}, 1000);
+						sendFilteredDataToRoom(io, gameId, game, 'gameData');
+					}, 1500);
 				});
 
 				socket.on('restartGame', (gameId) => {
@@ -184,7 +201,7 @@ export function socketIOPlugin(): Plugin {
 
 					game.restartGame();
 
-					io.to(gameId).emit('gameData', game.data);
+					sendFilteredDataToRoom(io, gameId, game, 'gameData');
 				});
 			});
 		}
