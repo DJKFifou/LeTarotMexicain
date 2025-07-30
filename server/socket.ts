@@ -16,6 +16,7 @@ function sendFilteredDataToRoom(io: Server, gameId: string, game: Game, eventNam
 	}
 }
 
+
 export function socketIOPlugin(): Plugin {
 	return {
 		name: 'dev-socketio-server',

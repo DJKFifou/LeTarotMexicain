@@ -23,8 +23,8 @@
 			playerStore.set(currentPlayer);
 		}
 	}
-	$: showExcuseCardOptionValue = false;
-	$: showCard = false;
+	let showExcuseCardOptionValue = false;
+	let showCard = false;
 	interface Player {
 		id: string;
 		name: string;

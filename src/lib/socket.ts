@@ -1,7 +1,8 @@
-import { Socket, io } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
-type ClientSocket = Socket;
-export const socket: ClientSocket = io('http://192.168.1.27:5173', {
+const socket = io('', {
 	reconnection: true,
 	reconnectionDelay: 1000
 });
+
+export { socket };

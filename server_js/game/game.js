@@ -1,0 +1,328 @@
+import { Player } from '../player/player.js';
+import { Turn } from '../turn/turn.js';
+import { Cards } from '../constants/cards.js';
+
+const uuid = crypto.randomUUID();
+
+export class Game {
+	id;
+	hostId;
+	dealerId;
+	players;
+	turn;
+	round;
+	currentTurnGuesses;
+	currentTurnPlays;
+	currentTurnWinner;
+	finalWinner;
+	action;
+
+	constructor() {
+		this.id = uuid;
+		this.players = [];
+		this.hostId = null;
+		this.dealerId = null;
+		this.turn = null;
+		this.round = 0;
+		this.currentTurnGuesses = [];
+		this.currentTurnPlays = [];
+		this.currentTurnWinner = null;
+		this.finalWinner = null;
+		this.action = 'askTrick';
+	}
+
+	addPlayer(player) {
+		this.players.push(player);
+
+		if (!this.hostId) {
+			this.hostId = player.data.id;
+		}
+
+		if (!this.dealerId) {
+			this.dealerId = player.data.id;
+		}
+	}
+
+	getPlayerById(id) {
+		return this.players.find((player) => player.data.id === id);
+	}
+
+	get playerList() {
+		return this.players;
+	}
+
+	addCurrentTurnPointToPlayer() {
+		if (this.currentTurnPlays.length) {
+			const highestPlay = this.currentTurnPlays.reduce((prev, current) =>
+				prev.card > current.card ? prev : current
+			);
+			console.log('Highest play:', highestPlay);
+			const winningPlayer = this.getPlayerById(highestPlay.playerId);
+			if (winningPlayer) {
+				winningPlayer.currentTurnPoints += 1;
+			}
+			console.log('Winning player:', winningPlayer?.data);
+		}
+	}
+
+	addFinalPointsToPlayers() {
+		this.players.forEach((player) => {
+			const playerGuess = this.currentTurnGuesses.find(
+				(guess) => guess.playerId === player.data.id
+			);
+			const guessValue = playerGuess?.guess ?? 0;
+			const pointsToAdd =
+				guessValue === player.currentTurnPoints
+					? 0
+					: Math.abs(guessValue - player.currentTurnPoints);
+			player.finalPoints += pointsToAdd;
+			player.currentTurnPoints = 0;
+		});
+	}
+
+	restartGame() {
+		this.round = 0;
+		this.currentTurnGuesses = [];
+		this.currentTurnPlays = [];
+		this.currentTurnWinner = null;
+		this.finalWinner = null;
+		this.players.forEach((player) => {
+			player.cards = [];
+			player.currentTurnPoints = 0;
+			player.finalPoints = 0;
+		});
+		this.dealerId = this.hostId;
+		this.turn = null;
+		this.distribueCards();
+		this.askTrick();
+	}
+
+	checkRound() {
+		if (this.players.every((player) => player.cards.length === 0)) {
+			this.round += 1;
+
+			this.addFinalPointsToPlayers();
+			this.clearCurrentTurnGuesses();
+
+			if (this.round > 4) {
+				this.round = 0;
+				console.log('Round finished, rotating dealer...');
+				console.log('Current dealer:', this.dealerId);
+				this.rotateDealer();
+				console.log('New dealer:', this.dealerId);
+				if (this.dealerId === this.hostId) {
+					this.checkWinner();
+					return;
+				}
+			}
+
+			this.distribueCards();
+			this.askTrick();
+		}
+	}
+
+	checkWinner() {
+		const winner = this.players.reduce((prev, current) =>
+			prev.finalPoints < current.finalPoints ? prev : current
+		);
+		this.finalWinner = winner.data.name;
+		console.log('Final winner:', this.finalWinner);
+	}
+
+	addCurrentTurnGuesses(guess) {
+		this.currentTurnGuesses.push(guess);
+	}
+
+	clearCurrentTurnGuesses() {
+		this.currentTurnGuesses = [];
+	}
+
+	addCurrentTurnPlay(play) {
+		this.currentTurnPlays.push(play);
+	}
+
+	clearCurrentTurnPlays() {
+		this.currentTurnPlays = [];
+	}
+
+	distribueCards() {
+		const shuffledCards = [...Cards];
+
+		for (let i = shuffledCards.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]];
+		}
+
+		const maxCardsPerPlayer = Math.max(1, 4 - this.round);
+
+		this.players.forEach((player, index) => {
+			const start = index * maxCardsPerPlayer;
+			const end = start + maxCardsPerPlayer;
+			player.cards = shuffledCards.slice(start, end);
+		});
+	}
+
+	start() {
+		this.distribueCards();
+		this.nextTurn();
+		this.askTrick();
+	}
+
+	askTrick() {
+		this.turn = new Turn(this);
+
+		if (this.turn.current) {
+			this.action = 'askTrick';
+		}
+	}
+
+	playCard() {
+		if (!this.turn) {
+			this.turn = new Turn(this);
+		}
+
+		if (this.turn.current) {
+			this.action = 'playCard';
+		}
+	}
+
+	nextTurn() {
+		this.turn = new Turn(this);
+	}
+
+	rotateDealer() {
+		if (!this.dealerId || this.players.length === 0) {
+			return;
+		}
+
+		const currentDealerIndex = this.players.findIndex((player) => player.data.id === this.dealerId);
+
+		if (currentDealerIndex !== -1) {
+			const nextDealerIndex = (currentDealerIndex + 1) % this.players.length;
+			this.dealerId = this.players[nextDealerIndex].data.id;
+		}
+	}
+
+	getPlayersByTurnOrder() {
+		if (!this.dealerId || this.players.length === 0) {
+			return this.players;
+		}
+
+		const dealerIndex = this.players.findIndex((player) => player.data.id === this.dealerId);
+
+		if (dealerIndex === -1) {
+			return this.players;
+		}
+
+		return [...this.players.slice(dealerIndex), ...this.players.slice(0, dealerIndex)];
+	}
+
+	playRound4Automatically() {
+		this.players.forEach((player) => {
+			if (player.cards.length > 0) {
+				const cardValue = player.cards[0];
+				let numericCardValue;
+
+				if (cardValue === 'Excuse') {
+					const playerGuess = this.currentTurnGuesses.find(
+						(guess) => guess.playerId === player.data.id
+					);
+					const guessValue = playerGuess?.guess ?? 0;
+					numericCardValue = guessValue === 0 ? 0 : 22;
+				} else {
+					numericCardValue = cardValue;
+				}
+
+				this.addCurrentTurnPlay({ card: numericCardValue, playerId: player.data.id });
+			}
+		});
+
+		this.addCurrentTurnPointToPlayer();
+	}
+
+	finishRound4() {
+		this.players.forEach((player) => {
+			player.cards = [];
+		});
+
+		this.checkRound();
+
+		this.clearCurrentTurnPlays();
+
+		this.action = 'askTrick';
+	}
+
+	get data() {
+		return {
+			id: this.id,
+			hostId: this.hostId,
+			dealerId: this.dealerId,
+			players: this.players.map((player) => player.data),
+			turn: this.turn?.data,
+			round: this.round,
+			currentTurnGuesses: this.currentTurnGuesses,
+			currentTurnPlays: this.currentTurnPlays,
+			currentTurnWinner: this.currentTurnWinner,
+			finalWinner: this.finalWinner,
+			action: this.action
+		};
+	}
+
+	getDataForPlayer(playerId) {
+		return {
+			id: this.id,
+			hostId: this.hostId,
+			dealerId: this.dealerId,
+			players: this.players.map((player) => {
+				if (player.data.id === playerId) {
+					return player.data;
+				} else {
+					return {
+						...player.data,
+						cards: new Array(player.cards.length).fill(null)
+					};
+				}
+			}),
+			turn: this.turn?.data,
+			round: this.round,
+			currentTurnGuesses: this.currentTurnGuesses,
+			currentTurnPlays: this.currentTurnPlays,
+			currentTurnWinner: this.currentTurnWinner,
+			finalWinner: this.finalWinner,
+			action: this.action
+		};
+	}
+
+	getDataForPlayerRound4(playerId) {
+		return {
+			id: this.id,
+			hostId: this.hostId,
+			dealerId: this.dealerId,
+			players: this.players.map((player) => {
+				if (player.data.id === playerId) {
+					return {
+						...player.data,
+						cards: new Array(player.cards.length).fill(null)
+					};
+				} else {
+					return player.data;
+				}
+			}),
+			turn: this.turn?.data,
+			round: this.round,
+			currentTurnGuesses: this.currentTurnGuesses,
+			currentTurnPlays: this.currentTurnPlays,
+			currentTurnWinner: this.currentTurnWinner,
+			finalWinner: this.finalWinner,
+			action: this.action
+		};
+	}
+
+	getSecureDataForPlayer(playerId) {
+		if (this.round === 4) {
+			return this.getDataForPlayerRound4(playerId);
+		} else {
+			return this.getDataForPlayer(playerId);
+		}
+	}
+}
