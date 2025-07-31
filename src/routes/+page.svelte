@@ -46,54 +46,65 @@
 	}
 </script>
 
-<div class="flex flex-col gap-2 text-center">
-	<h1 class="mb-4">Le Tarot Mexicain</h1>
-</div>
-
-<div class="flex gap-4">
-	<div class="flex flex-1 flex-col gap-2">
-		<p>Create a Game</p>
-		<form on:submit={createGame} class="mx-auto flex w-full max-w-lg flex-col items-center gap-4">
-			<div class="flex w-full flex-col gap-2">
-				<label for="name">Name :</label>
-				<input
-					type="text"
-					name="name"
-					id="name"
-					placeholder="Enter your name"
-					class="border"
-					required
-				/>
+<div class="relative my-4 flex h-dvh flex-col justify-center gap-12 text-center">
+	<h1 class="absolute top-4 left-1/2 -translate-x-1/2 text-3xl font-bold">Le Tarot Mexicain</h1>
+	<div class="flex w-full justify-center">
+		<div
+			class="grid w-full max-w-6xl grid-cols-1 items-center justify-center gap-4 p-4 md:grid-cols-2"
+		>
+			<div
+				class="flex h-full flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-black p-14 text-white"
+			>
+				<h3 class="text-xl font-medium">Create a Game</h3>
+				<form on:submit={createGame} class="mx-auto flex w-full max-w-lg flex-col gap-4">
+					<div class="flex w-full flex-col items-start gap-2">
+						<label for="name" class="font-medium">Name :</label>
+						<input
+							type="text"
+							name="name"
+							id="name"
+							placeholder="Enter your name"
+							class="w-full rounded-sm border p-2"
+							required
+						/>
+					</div>
+					<button type="submit" class="cursor-pointer underline underline-offset-4"
+						>Créer une partie</button
+					>
+				</form>
 			</div>
-			<button type="submit" class="cursor-pointer underline">Créer une partie</button>
-		</form>
-	</div>
-	<div class="flex flex-1 flex-col gap-2">
-		<p>Join a Game</p>
-		<form on:submit={joinGame} class="mx-auto flex w-full max-w-lg flex-col items-center gap-4">
-			<div class="flex w-full flex-col gap-2">
-				<label for="gameId">Id :</label>
-				<input
-					type="text"
-					name="gameId"
-					id="gameId"
-					placeholder="Enter an ID"
-					class="border"
-					required
-				/>
+			<div
+				class="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-black p-14 text-white"
+			>
+				<h3 class="text-xl font-medium">Join a Game</h3>
+				<form on:submit={joinGame} class="mx-auto flex w-full max-w-lg flex-col items-center gap-4">
+					<div class="flex w-full flex-col items-start gap-2">
+						<label for="gameId" class="font-medium">Id :</label>
+						<input
+							type="text"
+							name="gameId"
+							id="gameId"
+							placeholder="Enter an ID"
+							class="w-full rounded-sm border p-2"
+							required
+						/>
+					</div>
+					<div class="flex w-full flex-col items-start gap-2">
+						<label for="name" class="font-medium">Name :</label>
+						<input
+							type="text"
+							name="name"
+							id="name"
+							placeholder="Enter your name"
+							class="w-full rounded-sm border p-2"
+							required
+						/>
+					</div>
+					<button type="submit" class="cursor-pointer underline underline-offset-4"
+						>Rejoindre la partie</button
+					>
+				</form>
 			</div>
-			<div class="flex w-full flex-col gap-2">
-				<label for="name">Name :</label>
-				<input
-					type="text"
-					name="name"
-					id="name"
-					placeholder="Enter your name"
-					class="border"
-					required
-				/>
-			</div>
-			<button type="submit" class="cursor-pointer underline">Rejoindre la partie</button>
-		</form>
+		</div>
 	</div>
 </div>

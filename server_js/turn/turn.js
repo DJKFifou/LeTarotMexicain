@@ -18,8 +18,34 @@ export class Turn {
 	}
 
 	endTurn() {
-		this.nextPlayer();
-	}
+			if (this.isEndOfTrick()) {
+				const winner = this.getTrickWinner();
+				if (winner) {
+					this.setNextTrickOrder(winner.data.id);
+				}
+			}
+			this.nextPlayer();
+		}
+	
+		isEndOfTrick() {
+			return this.remaining.length === 0;
+		}
+	
+		getTrickWinner() {
+			if (typeof this.game.getTrickWinner === 'function') {
+				return this.game.getTrickWinner();
+			}
+			return null;
+		}
+	
+		setNextTrickOrder(winnerId) {
+			const playerList = this.game.getPlayersByTurnOrder();
+			const winnerIndex = playerList.findIndex((p) => p.data.id === winnerId);
+			if (winnerIndex === -1) return;
+			const reordered = [...playerList.slice(winnerIndex), ...playerList.slice(0, winnerIndex)];
+			this.remaining = reordered.map((p) => p.data.id);
+			this.played = [];
+		}
 
 	nextPlayer() {
 		if (this.current) {

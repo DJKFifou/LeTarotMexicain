@@ -333,4 +333,12 @@ export class Game {
 			return this.getDataForPlayer(playerId);
 		}
 	}
+
+	getTrickWinner(): Player | null {
+		if (!this.currentTurnPlays || !this.currentTurnPlays.length) return null;
+		const bestPlay = this.currentTurnPlays.reduce((prev, current) =>
+			prev.card > current.card ? prev : current
+		);
+		return this.getPlayerById(bestPlay.playerId) ?? null;
+	}
 }

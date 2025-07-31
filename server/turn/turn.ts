@@ -24,7 +24,33 @@ export class Turn implements EntityClass<TurnData> {
 	}
 
 	endTurn(): void {
+		if (this.isEndOfTrick()) {
+			const winner = this.getTrickWinner();
+			if (winner) {
+				this.setNextTrickOrder(winner.data.id);
+			}
+		}
 		this.nextPlayer();
+	}
+
+	isEndOfTrick(): boolean {
+		return this.remaining.length === 0;
+	}
+
+	getTrickWinner(): Player | null {
+		if (typeof this.game.getTrickWinner === 'function') {
+			return this.game.getTrickWinner();
+		}
+		return null;
+	}
+
+	setNextTrickOrder(winnerId: PlayerId): void {
+		const playerList = this.game.getPlayersByTurnOrder();
+		const winnerIndex = playerList.findIndex((p) => p.data.id === winnerId);
+		if (winnerIndex === -1) return;
+		const reordered = [...playerList.slice(winnerIndex), ...playerList.slice(0, winnerIndex)];
+		this.remaining = reordered.map((p) => p.data.id);
+		this.played = [];
 	}
 
 	protected nextPlayer(): void {

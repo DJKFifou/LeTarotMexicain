@@ -31,27 +31,42 @@
 	});
 </script>
 
-<p>Lobby :</p>
+<div class="flex h-dvh w-full items-center justify-center">
+	<div class="flex flex-col items-center justify-center gap-2 rounded-xl bg-black p-14 text-white">
+		<div class="flex gap-1">
+			<p>Id :</p>
+			<button onclick={() => navigator.clipboard.writeText($gameId)} class="cursor-pointer"
+				>{$gameId}</button
+			>
+		</div>
 
-<p>ID : {$gameId}</p>
+		<p>Hôte : {$hostStore?.name}</p>
 
-<p>Hôte : {$hostStore?.name}</p>
-
-<div>
-	<p>Invités :</p>
-	<ul>
-		{#each $players as player}
-			{#if player.id !== $hostStore?.id}
-				<li>{player.name}</li>
+		<div class="flex flex-col gap-1">
+			<p>Invités :</p>
+			{#if $players.length < 2}
+				<p>Aucun</p>
+			{:else}
+				<ul>
+					{#each $players as player}
+						{#if player.id !== $hostStore?.id}
+							<li class="ml-4 list-disc">{player.name}</li>
+						{/if}
+					{/each}
+				</ul>
 			{/if}
-		{/each}
-	</ul>
+		</div>
+
+		{#if $players.length >= 5}
+			<p>Salon plein !</p>
+		{/if}
+
+		{#if $player.id === $hostStore?.id}
+			<button onclick={() => startGame($gameId)} class="cursor-pointer underline underline-offset-4"
+				>Start de game</button
+			>
+		{:else}
+			<p>En attente de l'hôte...</p>
+		{/if}
+	</div>
 </div>
-
-{#if $players.length >= 5}
-	<p>Salon plein !</p>
-{/if}
-
-{#if $player.id === $hostStore?.id}
-	<button onclick={() => startGame($gameId)} class="cursor-pointer underline">Start de game</button>
-{/if}

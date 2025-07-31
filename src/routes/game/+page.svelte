@@ -136,11 +136,9 @@
 	});
 </script>
 
-<p>Game :</p>
-
 <p>{$playerStore.name}</p>
 
-<p>{$playerStore.id === $hostStore?.id ? 'Im god' : 'Im a piece of shit'}</p>
+<p>{$playerStore.id === $hostStore?.id ? "I'm the host" : "I'm not the host"}</p>
 
 <p>{$turn.current.player.id === $playerStore.id ? "That's my turn !" : 'Not my turn yet...'}</p>
 

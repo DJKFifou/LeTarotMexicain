@@ -1,4 +1,3 @@
-import { Player } from '../player/player.js';
 import { Turn } from '../turn/turn.js';
 import { Cards } from '../constants/cards.js';
 
@@ -324,5 +323,13 @@ export class Game {
 		} else {
 			return this.getDataForPlayer(playerId);
 		}
+	}
+
+	getTrickWinner() {
+		if (!this.currentTurnPlays || !this.currentTurnPlays.length) return null;
+		const bestPlay = this.currentTurnPlays.reduce((prev, current) =>
+			prev.card > current.card ? prev : current
+		);
+		return this.getPlayerById(bestPlay.playerId) ?? null;
 	}
 }
