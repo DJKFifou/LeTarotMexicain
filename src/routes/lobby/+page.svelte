@@ -63,7 +63,7 @@
 
 		{#if $player.id === $hostStore?.id}
 			<button onclick={() => startGame($gameId)} class="cursor-pointer underline underline-offset-4"
-				>Start de game</button
+				>Commencer la partie</button
 			>
 		{:else}
 			<p>En attente de l'hôte...</p>

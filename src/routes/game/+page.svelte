@@ -136,9 +136,9 @@
 	});
 </script>
 
-<p>{$playerStore.name}</p>
+<p>Nom : {$playerStore.name}</p>
 
-<p>{$playerStore.id === $hostStore?.id ? "I'm the host" : "I'm not the host"}</p>
+<p>Hôte : {$hostStore?.name}</p>
 
 <p>{$turn.current.player.id === $playerStore.id ? "That's my turn !" : 'Not my turn yet...'}</p>
 
