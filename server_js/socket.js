@@ -28,6 +28,11 @@ export function sockets(httpServer) {
 			console.log('Reconnecté après', attemptNumber, 'tentatives');
 		});
 
+		socket.on('checkGameExists', ({ gameId }) => {
+			const gameExists = gameRepository.getGameById(gameId) !== null;
+			socket.emit('gameExists', { exists: gameExists });
+		});
+
 		socket.on('gameCreate', ({ playerInputData }) => {
 			console.log('create game');
 
@@ -117,7 +122,7 @@ export function sockets(httpServer) {
 					game.finishRound4();
 
 					sendFilteredDataToRoom(io, gameId, game, 'gameData');
-				}, 2000);
+				}, 3000);
 			}
 		});
 

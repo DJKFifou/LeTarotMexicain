@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { socket } from '$lib/socket';
 	import { player, players, host as hostStore, gameId, turn } from '$lib/stores/game';
 	import { goto } from '$app/navigation';
@@ -39,6 +40,11 @@
 				>{$gameId}</button
 			>
 		</div>
+
+		<button
+			onclick={() => navigator.clipboard.writeText(page.url.origin + '/join/' + $gameId)}
+			class="cursor-pointer underline underline-offset-4">Partager le lien</button
+		>
 
 		<p>Hôte : {$hostStore?.name}</p>
 

@@ -226,20 +226,26 @@ export class Game {
 	}
 
 	playRound4Automatically(): void {
+		console.log('Playing round 4 automatically...');
 		this.players.forEach((player) => {
 			if (player.cards.length > 0) {
 				const cardValue = player.cards[0];
+				console.log('Player:', player.data.name, 'plays card:', cardValue);
 				let numericCardValue: number;
 
 				if (cardValue === 'Excuse') {
+					console.log('Player:', player.data.name, 'plays Excuse');
 					const playerGuess = this.currentTurnGuesses.find(
 						(guess) => guess.playerId === player.data.id
 					);
-					const guessValue = playerGuess?.guess ?? 0;
+					console.log('Player guess:', playerGuess);
+					const guessValue = Number(playerGuess?.guess ?? 0);
+					console.log('guessValue:', guessValue);
 					numericCardValue = guessValue === 0 ? 0 : 22;
 				} else {
 					numericCardValue = cardValue;
 				}
+				console.log('numericCardValue:', numericCardValue);
 
 				this.addCurrentTurnPlay({ card: numericCardValue, playerId: player.data.id });
 			}

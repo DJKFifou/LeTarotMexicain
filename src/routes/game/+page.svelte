@@ -24,7 +24,7 @@
 		}
 	}
 	let showExcuseCardOptionValue = false;
-	let showCard = false;
+	// let showCard = false;
 	interface Player {
 		id: string;
 		name: string;
@@ -126,41 +126,70 @@
 		turn.set(data.turn);
 		if ($currentTurnGuesses.length >= $players.length) {
 			socket.emit('endGuessPhase', data.id);
-			if ($round === 4) {
-				showCard = true;
-				setTimeout(() => {
-					showCard = false;
-				}, 2500);
-			}
+			// if ($round === 4) {
+			// 	showCard = true;
+			// 	setTimeout(() => {
+			// 		showCard = false;
+			// 	}, 3000);
+			// }
 		}
 	});
 </script>
 
-<p>Nom : {$playerStore.name}</p>
-
-<p>Hôte : {$hostStore?.name}</p>
-
-<p>{$turn.current.player.id === $playerStore.id ? "That's my turn !" : 'Not my turn yet...'}</p>
+<div class="flex items-center justify-between bg-black p-4 font-medium text-white">
+	<p>Nom : {$playerStore.name}</p>
+	<h4 class="text-lg">
+		{$turn.current.player.id === $playerStore.id ? 'À moi de jouer !' : 'En attente des joueurs...'}
+	</h4>
+	<p>Hôte : {$hostStore?.name}</p>
+</div>
 
 {#if $round !== 4}
-	<div class="flex flex-wrap gap-2">
+	<div class="mt-4 flex flex-wrap justify-center gap-2">
 		{#each $playerStore.cards as playerCard}
 			{#if yourTurnToPlay}
 				{#if playerCard === 'Excuse'}
-					<button on:click={() => playExcuseCard()} class="cursor-pointer rounded border p-2"
-						>{playerCard}</button
+					<button
+						onclick={() => playExcuseCard()}
+						class="h-20 w-15 cursor-pointer rounded border text-lg font-medium"
+					>
+						<span class="inline-block rotate-90">{playerCard}</span></button
 					>
 				{:else}
 					<button
-						on:click={() => playCard($gameId, playerCard)}
-						class="cursor-pointer rounded border p-2">{playerCard}</button
+						onclick={() => playCard($gameId, playerCard)}
+						class="h-20 w-15 cursor-pointer rounded border text-xl font-medium"
+					>
+						<span>{playerCard}</span></button
 					>
 				{/if}
+			{:else if playerCard === 'Excuse'}
+				<button class="h-20 w-15 rounded border text-lg font-medium">
+					<span class="inline-block rotate-90">{playerCard}</span></button
+				>
 			{:else}
-				<button class="rounded border p-2">{playerCard}</button>
+				<button class="h-20 w-15 rounded border text-xl font-medium">
+					<span>{playerCard}</span></button
+				>
 			{/if}
 		{/each}
 	</div>
+{/if}
+
+{#if yourTurnToAsk}
+	<form onsubmit={askedTrick} class="mt-4 flex justify-center">
+		<input
+			type="number"
+			min="0"
+			name="askTrick"
+			id="askTrick"
+			placeholder="Nombre de plis"
+			class="rounded-s border px-2 py-1"
+		/>
+		<button type="submit" class="cursor-pointer rounded-e bg-black px-2 py-1 text-white"
+			>Valider</button
+		>
+	</form>
 {/if}
 
 {#if showExcuseCardOptionValue}
@@ -170,14 +199,14 @@
 		<p>Choisir la valeur de l'Excuse :</p>
 		<div class="flex gap-4">
 			<button
-				on:click={() => {
+				onclick={() => {
 					showExcuseCardOptionValue = false;
 					playCard($gameId, 0);
 				}}
 				class="cursor-pointer rounded border bg-white p-2">0</button
 			>
 			<button
-				on:click={() => {
+				onclick={() => {
 					showExcuseCardOptionValue = false;
 					playCard($gameId, 22);
 				}}
@@ -189,7 +218,7 @@
 
 <div class="absolute top-1/2 left-1/2 flex -translate-1/2 flex-wrap gap-2">
 	{#each $currentTurnPlays as play}
-		<p>{play.card}</p>
+		<button class="h-20 w-15 rounded border text-xl font-medium">{play.card}</button>
 	{/each}
 </div>
 
@@ -202,17 +231,21 @@
 				<p>{player.finalPoints}</p>
 			{/each}
 		</div>
+		{#if $playerStore.id === $hostStore?.id}
+			<button
+				onclick={() => {
+					socket.emit('restartGame', $gameId);
+					goto('/lobby');
+				}}
+				class="cursor-pointer bg-black p-1 text-white"
+			>
+				Rejouer
+			</button>
+		{:else}
+			<p>En attente de l'hôte pour rejouer...</p>
+		{/if}
 		<button
-			on:click={() => {
-				socket.emit('restartGame', $gameId);
-				goto('/lobby');
-			}}
-			class="cursor-pointer bg-black p-1 text-white"
-		>
-			Rejouer
-		</button>
-		<button
-			on:click={() => {
+			onclick={() => {
 				socket.emit('leaveGame', $gameId);
 				goto('/');
 			}}
@@ -223,39 +256,36 @@
 	</div>
 {/if}
 
-{#if yourTurnToAsk}
-	<form on:submit={askedTrick}>
-		<input
-			type="number"
-			min="0"
-			name="askTrick"
-			id="askTrick"
-			placeholder="Nombre de plis"
-			class="border"
-		/>
-		<button type="submit" class="cursor-pointer bg-black p-1 text-white">Valider</button>
-	</form>
-{/if}
-
-<div class="absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-4">
+<div class="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-end justify-center gap-4">
 	{#each $players as player}
-		<div class="flex flex-col items-center justify-end gap-2 text-center">
-			{#if ($round === 4 && player.id !== $playerStore.id) || showCard}
-				<p>Carte du joueur: {player.cards}</p>
-			{/if}
-			<div class="flex">
+		<div
+			class="flex w-40 flex-col items-center justify-end gap-2 {player.id ===
+			$turn.current.player.id
+				? 'border-2'
+				: 'border'} text-center"
+		>
+			<div class="w-full {player.id === $turn.current.player.id ? 'border-b-2' : 'border-b'} p-2">
+				<p>{player.name}</p>
+			</div>
+			<div class="flex w-full flex-col items-start justify-center p-2">
+				<div class="flex">
+					{#if $round === 4 && player.id !== $playerStore.id}
+						<p>Carte du joueur: {player.cards}</p>
+					{/if}
+				</div>
 				<p>
-					{$currentTurnPoints && $currentTurnGuesses
-						? ($currentTurnPoints.find((turnPoints) => turnPoints.playerId === player.id)
-								?.turnPoints ?? 0) + '/'
-						: ''}
-				</p>
-				<p>
+					Plis annoncés:
 					{$currentTurnGuesses.find((guess) => guess.playerId === player.id)?.guess}
 				</p>
+				<p>
+					Plis remportés:
+					{$currentTurnPoints && $currentTurnGuesses
+						? ($currentTurnPoints.find((turnPoints) => turnPoints.playerId === player.id)
+								?.turnPoints ?? '')
+						: ''}
+				</p>
+				<p>Score: {player.finalPoints}</p>
 			</div>
-			<p>{player.finalPoints}</p>
-			<p>{player.name}</p>
 		</div>
 	{/each}
 </div>

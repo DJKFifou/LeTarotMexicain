@@ -1,0 +1,61 @@
+name: Geoquizz
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.jobs
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.18.0'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build
+            server_js
+          retention-days: 1
+  deploy:
+    name: Deploy project
+    permissions:
+      deployments: write
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+      - name: Setup SSH
+        run: |_
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+      - name: Setup Rsync
+        run: |
+          sudo apt update
+          sudo apt install rsync -y
+      - name: Deploy build folder
+        run: |
+          rsync -avz ./build/ \
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:${{ secrets.DEPLOY_PATH }}/build
+      - name: Deploy server_js folder
+        run: |
+          rsync -avz ./server_js/ \
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:${{ secrets.DEPLOY_PATH }}/server_js
+      - name: Restart service
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} \
+            "source .bashrc && cd ${{ secrets.DEPLOY_PATH }} && pm2 restart ${{ vars.PROJECT_NAME }}"

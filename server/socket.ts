@@ -16,7 +16,6 @@ function sendFilteredDataToRoom(io: Server, gameId: string, game: Game, eventNam
 	}
 }
 
-
 export function socketIOPlugin(): Plugin {
 	return {
 		name: 'dev-socketio-server',
@@ -41,6 +40,11 @@ export function socketIOPlugin(): Plugin {
 
 				socket.on('reconnect', (attemptNumber) => {
 					console.log('Reconnecté après', attemptNumber, 'tentatives');
+				});
+
+				socket.on('checkGameExists', ({ gameId }) => {
+					const gameExists = gameRepository.getGameById(gameId) !== null;
+					socket.emit('gameExists', { exists: gameExists });
 				});
 
 				socket.on('gameCreate', ({ playerInputData }) => {
@@ -132,7 +136,7 @@ export function socketIOPlugin(): Plugin {
 							game.finishRound4();
 
 							sendFilteredDataToRoom(io, gameId, game, 'gameData');
-						}, 2000);
+						}, 3000);
 					}
 				});
 
