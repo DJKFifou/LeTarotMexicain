@@ -81,10 +81,6 @@ export class Turn {
 		return [...playerList.slice(indexOfCurrent), ...playerList.slice(0, indexOfCurrent)];
 	}
 
-	get test() {
-		return null;
-	}
-
 	get data() {
 		return {
 			played: this.played,
