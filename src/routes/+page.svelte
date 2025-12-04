@@ -55,7 +55,7 @@
 			<div
 				class="flex h-full flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-black p-14 text-white"
 			>
-				<h3 class="text-xl font-medium">Create a Game !</h3>
+				<h3 class="text-xl font-medium">Create a Game</h3>
 				<form onsubmit={createGame} class="mx-auto flex w-full max-w-lg flex-col gap-4">
 					<div class="flex w-full flex-col items-start gap-2">
 						<label for="name" class="font-medium">Name :</label>
@@ -76,7 +76,7 @@
 			<div
 				class="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-black p-14 text-white"
 			>
-				<h3 class="text-xl font-medium">Join a Game !</h3>
+				<h3 class="text-xl font-medium">Join a Game</h3>
 				<form onsubmit={joinGame} class="mx-auto flex w-full max-w-lg flex-col items-center gap-4">
 					<div class="flex w-full flex-col items-start gap-2">
 						<label for="gameId" class="font-medium">Id :</label>
